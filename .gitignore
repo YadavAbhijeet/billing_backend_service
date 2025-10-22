@@ -1,0 +1,105 @@
+# === Node modules ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# === Environment files ===
+.env
+.env.*
+!.env.example
+
+# === Logs ===
+logs/
+*.log
+*.out
+*.err
+log.txt
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# === Build output ===
+dist/
+build/
+tmp/
+temp/
+.cache/
+.next/
+.nuxt/
+out/
+coverage/
+.wrangler/
+
+# === IDE / Editor ===
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# === System files ===
+.DS_Store
+Thumbs.db
+
+# === Testing ===
+jest-html-reporters-*.html
+jest-coverage/
+mochawesome-report/
+nyc_output/
+
+# === Package Managers ===
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# === TypeScript ===
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# === Docker ===
+docker-compose.override.yml
+*.pid
+*.tar
+*.img
+
+# === Optional: Ignore uploaded/static files ===
+uploads/
+public/uploads/
+static/
+storage/
+
+# === Optional: Ignore build environment folders ===
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# === Optional: Ignore runtime caches ===
+.cache/
+.nyc_output/
+bower_components/
+
+# === Optional: Ignore PM2 / Forever logs ===
+pids/
+logs/
+pids/*
+*.pid
+*.seed
+*.pid.lock
+
+
+# TypeScript compiled output
+/dist
+/**/*.js
+/**/*.js.map
+
+
+.next/
+out/
+
+
+prisma/dev.db
+prisma/dev.db-journal
