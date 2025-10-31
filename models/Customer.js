@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const Address = require('./Address');
 
 const Customer = sequelize.define('Customer', {
   id: {
@@ -11,34 +12,23 @@ const Customer = sequelize.define('Customer', {
     type: DataTypes.STRING(150),
     allowNull: false,
   },
-  contact_person: {
-    type: DataTypes.STRING(100),
-  },
-  email: {
+  primary_contact_person: {
     type: DataTypes.STRING(100),
     allowNull: false,
   },
-  phone: {
+  primary_email: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+  },
+  primary_phone: {
     type: DataTypes.STRING(15),
     allowNull: false,
-  },
-  billing_address: {
-    type: DataTypes.TEXT,
-  },
-  shipping_address: {
-    type: DataTypes.TEXT,
   },
   gstin: {
     type: DataTypes.STRING(20),
   },
   pan_no: {
     type: DataTypes.STRING(15),
-  },
-  state: {
-    type: DataTypes.STRING(100),
-  },
-  pincode: {
-    type: DataTypes.STRING(10),
   },
   created_at: {
     type: DataTypes.DATE,
@@ -51,6 +41,17 @@ const Customer = sequelize.define('Customer', {
 }, {
   tableName: 'customers',
   timestamps: false,
+});
+
+// Define the relationship with Address model
+Customer.hasMany(Address, {
+  foreignKey: 'customerId',
+  as: 'addresses'
+});
+
+Address.belongsTo(Customer, {
+  foreignKey: 'customerId',
+  as: 'customer'
 });
 
 module.exports = Customer;

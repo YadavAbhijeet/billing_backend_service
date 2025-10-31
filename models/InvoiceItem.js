@@ -11,10 +11,13 @@ const InvoiceItem = sequelize.define('InvoiceItem', {
   },
   invoice_id: {
     type: DataTypes.INTEGER,
+    allowNull: false, // ✅ required — every item must belong to an invoice
     references: {
-      model: Invoice,
+      model: 'invoices', // ✅ use table name (not imported model to prevent circular dependency)
       key: 'id',
     },
+    onDelete: 'CASCADE', // ✅ when invoice is deleted, delete its items
+    onUpdate: 'CASCADE',
   },
   product_id: {
     type: DataTypes.INTEGER,
@@ -25,6 +28,15 @@ const InvoiceItem = sequelize.define('InvoiceItem', {
   },
   description: {
     type: DataTypes.TEXT,
+  },
+  hsn_code: {
+    type: DataTypes.STRING(50),
+  },
+  unit_type: {
+    type: DataTypes.STRING(50),
+  },
+  gst_rate: {
+    type: DataTypes.DECIMAL(5, 2),
   },
   quantity: {
     type: DataTypes.DECIMAL(10, 2),

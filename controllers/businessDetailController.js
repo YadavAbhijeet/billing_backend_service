@@ -52,3 +52,23 @@ exports.deleteBusinessDetail = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Get default business details
+exports.getDefaultBusiness = async (req, res) => {
+  try {
+    const business = await BusinessDetail.findOne({
+      where: { is_deleted: false },
+      order: [['id', 'ASC']]
+    });
+    
+    if (!business) {
+      return res.status(404).json({ 
+        error: 'No business details found. Please create a business profile first.' 
+      });
+    }
+    
+    res.status(200).json(business);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

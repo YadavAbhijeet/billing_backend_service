@@ -1,30 +1,82 @@
 const Customer = require('../models/Customer');
+const Address = require('../models/Address');
+const sequelize = require('../config/database');
 
 exports.createCustomer = async (req, res) => {
+  const t = await sequelize.transaction();
+
   try {
-    const { company_name, contact_person, email, phone, billing_address, shipping_address, gstin, pan_no, state, pincode, industry } = req.body;
-    const customer = await Customer.create({
+    const {
       company_name,
-      contact_person,
-      email,
-      phone,
-      billing_address,
-      shipping_address,
+      primary_contact_person,
+      primary_email,
+      primary_phone,
       gstin,
       pan_no,
-      state,
-      pincode,
-      industry
+      addresses
+    } = req.body;
+
+    // Create customer
+    const customer = await Customer.create({
+      company_name,
+      primary_contact_person,
+      primary_email,
+      primary_phone,
+      gstin,
+      pan_no
+    }, { transaction: t });
+
+    // Create addresses if provided
+    if (addresses && Array.isArray(addresses)) {
+      const addressPromises = addresses.map(address => {
+        return Address.create({
+          customerId: customer.id,
+          address_type: address.address_type,
+          contact_person: address.contact_person,
+          contact_email: address.contact_email,
+          contact_phone: address.contact_phone,
+          company_name: address.company_name,
+          street_address: address.street_address,
+          city: address.city,
+          state: address.state,
+          country: address.country || 'India',
+          pincode: address.pincode,
+          is_default: address.is_default || false
+        }, { transaction: t });
+      });
+
+      await Promise.all(addressPromises);
+    }
+
+    await t.commit();
+
+    // Fetch the customer with addresses
+    const customerWithAddresses = await Customer.findOne({
+      where: { id: customer.id },
+      include: [{
+        model: Address,
+        as: 'addresses'
+      }]
     });
-    res.status(201).json(customer);
+
+    res.status(201).json(customerWithAddresses);
   } catch (error) {
+    await t.rollback();
     res.status(400).json({ error: error.message });
   }
 };
 
 exports.getAllCustomers = async (req, res) => {
   try {
-    const customers = await Customer.findAll({ where: { is_deleted: false } });
+    const customers = await Customer.findAll({
+      where: { is_deleted: false },
+      include: [{
+        model: Address,
+        as: 'addresses',
+        where: { is_deleted: false },
+        required: false
+      }]
+    });
     res.status(200).json(customers);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -33,7 +85,15 @@ exports.getAllCustomers = async (req, res) => {
 
 exports.getCustomerById = async (req, res) => {
   try {
-    const customer = await Customer.findOne({ where: { id: req.params.id, is_deleted: false } });
+    const customer = await Customer.findOne({
+      where: { id: req.params.id, is_deleted: false },
+      include: [{
+        model: Address,
+        as: 'addresses',
+        where: { is_deleted: false },
+        required: false
+      }]
+    });
     if (!customer) return res.status(404).json({ error: 'Customer not found' });
     res.status(200).json(customer);
   } catch (error) {
@@ -42,40 +102,103 @@ exports.getCustomerById = async (req, res) => {
 };
 
 exports.updateCustomer = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
-    const { company_name, contact_person, email, phone, billing_address, shipping_address, gstin, pan_no, state, pincode, industry } = req.body;
+    const { company_name, primary_contact_person, primary_email, primary_phone, gstin, pan_no, addresses } = req.body;
+
+    // Update customer
     const [updated] = await Customer.update({
       company_name,
-      contact_person,
-      email,
-      phone,
-      billing_address,
-      shipping_address,
+      primary_contact_person,
+      primary_email,
+      primary_phone,
       gstin,
-      pan_no,
-      state,
-      pincode,
-      industry
-    }, { where: { id: req.params.id, is_deleted: false } });
-    if (!updated) return res.status(404).json({ error: 'Customer not found' });
-    const updatedCustomer = await Customer.findByPk(req.params.id, { where: { is_deleted: false } });
+      pan_no
+    }, { where: { id: req.params.id, is_deleted: false }, transaction: t });
+
+    if (!updated) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    // Handle addresses array if provided
+    if (addresses && Array.isArray(addresses)) {
+      for (const addr of addresses) {
+        if (addr.id) {
+          // If address has id, update or soft-delete it
+          if (addr._delete) {
+            await Address.update({ is_deleted: true }, { where: { id: addr.id, customerId: req.params.id }, transaction: t });
+          } else {
+            const updateFields = {
+              address_type: addr.address_type,
+              contact_person: addr.contact_person,
+              contact_email: addr.contact_email,
+              contact_phone: addr.contact_phone,
+              company_name: addr.company_name,
+              street_address: addr.street_address,
+              city: addr.city,
+              state: addr.state,
+              country: addr.country || 'India',
+              pincode: addr.pincode,
+              is_default: !!addr.is_default,
+              is_deleted: addr.is_deleted ? true : false
+            };
+            await Address.update(updateFields, { where: { id: addr.id, customerId: req.params.id }, transaction: t });
+          }
+        } else {
+          // Create new address
+          await Address.create({
+            customerId: req.params.id,
+            address_type: addr.address_type,
+            contact_person: addr.contact_person,
+            contact_email: addr.contact_email,
+            contact_phone: addr.contact_phone,
+            company_name: addr.company_name,
+            street_address: addr.street_address,
+            city: addr.city,
+            state: addr.state,
+            country: addr.country || 'India',
+            pincode: addr.pincode,
+            is_default: !!addr.is_default
+          }, { transaction: t });
+        }
+      }
+    }
+
+    await t.commit();
+
+    const updatedCustomer = await Customer.findOne({
+      where: { id: req.params.id, is_deleted: false },
+      include: [{ model: Address, as: 'addresses', where: { is_deleted: false }, required: false }]
+    });
+
     res.status(200).json(updatedCustomer);
   } catch (error) {
+    await t.rollback();
     res.status(400).json({ error: error.message });
   }
 };
 
 exports.deleteCustomer = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
-    const customer = await Customer.findByPk(req.params.id, { where: { is_deleted: false } });
-    if (!customer) return res.status(404).json({ error: 'Customer not found' });
+    const customer = await Customer.findOne({ where: { id: req.params.id, is_deleted: false }, transaction: t });
+    if (!customer) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Customer not found' });
+    }
 
-    // Set is_deleted flag to true for soft delete
-    customer.is_deleted = true;
-    await customer.save();
+    // Soft-delete customer
+    await Customer.update({ is_deleted: true }, { where: { id: req.params.id }, transaction: t });
 
-    res.status(200).json({ message: 'Customer deleted successfully' });
+    // Soft-delete all addresses for this customer
+    await Address.update({ is_deleted: true }, { where: { customerId: req.params.id }, transaction: t });
+
+    await t.commit();
+
+    res.status(200).json({ message: 'Customer and addresses deleted successfully' });
   } catch (error) {
+    await t.rollback();
     res.status(500).json({ error: error.message });
   }
 };

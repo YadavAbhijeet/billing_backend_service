@@ -1,8 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const BusinessDetail = require('./BusinessDetail');
-const Customer = require('./Customer');
-const Template = require('./InvoiceTemplate');
 
 const Invoice = sequelize.define('Invoice', {
   id: {
@@ -10,91 +7,30 @@ const Invoice = sequelize.define('Invoice', {
     autoIncrement: true,
     primaryKey: true,
   },
-  invoice_number: {
-    type: DataTypes.STRING(50),
-    unique: true,
-    allowNull: false,
-  },
-  business_id: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: BusinessDetail,
-      key: 'id',
-    },
-  },
-  customer_id: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Customer,
-      key: 'id',
-    },
-  },
-  invoice_date: {
-    type: DataTypes.DATE,
-    allowNull: false,
-  },
-  due_date: {
-    type: DataTypes.DATE,
-  },
-  place_of_supply: {
-    type: DataTypes.STRING(100),
-  },
-  subtotal: {
-    type: DataTypes.DECIMAL(10, 2),
-  },
-  cgst_amount: {
-    type: DataTypes.DECIMAL(10, 2),
-  },
-  sgst_amount: {
-    type: DataTypes.DECIMAL(10, 2),
-  },
-  igst_amount: {
-    type: DataTypes.DECIMAL(10, 2),
-  },
-  total_tax: {
-    type: DataTypes.DECIMAL(10, 2),
-  },
-  discount_amount: {
-    type: DataTypes.DECIMAL(10, 2),
-  },
-  total_amount: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-  },
-  amount_in_words: {
-    type: DataTypes.STRING(255),
-  },
-  payment_mode: {
-    type: DataTypes.STRING(50),
-  },
-  payment_status: {
-    type: DataTypes.ENUM('Pending', 'Paid', 'Partially Paid'),
-    defaultValue: 'Pending',
-  },
-  notes: {
-    type: DataTypes.TEXT,
-  },
-  template_id: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Template,
-      key: 'id',
-    },
-  },
-  pdf_path: {
-    type: DataTypes.TEXT,
-  },
-  created_at: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
-  is_deleted: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
+  invoice_number: DataTypes.STRING,
+  business_id: DataTypes.INTEGER,
+  customer_id: DataTypes.INTEGER,
+  billing_address_id: DataTypes.INTEGER,
+  shipping_address_id: DataTypes.INTEGER,
+  invoice_date: DataTypes.DATE,
+  due_date: DataTypes.DATE,
+  place_of_supply: DataTypes.STRING,
+  subtotal: { type: DataTypes.FLOAT, defaultValue: 0 },
+  cgst_amount: { type: DataTypes.FLOAT, defaultValue: 0 },
+  sgst_amount: { type: DataTypes.FLOAT, defaultValue: 0 },
+  igst_amount: { type: DataTypes.FLOAT, defaultValue: 0 },
+  total_tax: { type: DataTypes.FLOAT, defaultValue: 0 },
+  discount_amount: { type: DataTypes.FLOAT, defaultValue: 0 },
+  total_amount: { type: DataTypes.FLOAT, defaultValue: 0 },
+  amount_in_words: DataTypes.STRING,
+  payment_mode: DataTypes.STRING,
+  payment_status: DataTypes.STRING,
+  notes: DataTypes.TEXT,
+  pdf_path: DataTypes.STRING,
+  is_deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
 }, {
-  tableName: 'invoices',
-  timestamps: false,
+  tableName: 'Invoices',
+  underscored: true,
 });
 
 module.exports = Invoice;

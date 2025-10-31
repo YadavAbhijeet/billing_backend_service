@@ -1,10 +1,20 @@
 const express = require('express');
 const sequelize = require('./config/database');
+const cors = require('cors');
+
+// Import all models to ensure they are registered
+require('./models/Customer');
+require('./models/Address');
+require('./models/BusinessDetail');
+require('./models/Invoice');
+require('./models/InvoiceTemplate');
+require('./models/Product');
+
+// Import routes
 const customerRoutes = require('./routes/customerRoutes');
 const businessDetailRoutes = require('./routes/businessDetailRoutes');
 const invoiceTemplateRoutes = require('./routes/invoiceTemplateRoutes');
 const invoice = require('./routes/invoiceRoutes');
-const cors = require('cors');
 
 const app = express();
 const PORT = 3000;
@@ -23,7 +33,9 @@ app.use('/api/invoice-templates', invoiceTemplateRoutes);
 sequelize.authenticate()
   .then(() => {
     console.log('Database connected...');
-    return sequelize.sync({ alter: true });
+  // Use sync() without alter to avoid Sequelize trying to rebuild/alter tables automatically.
+  // Schema changes should be applied via migrations or a controlled script.
+  return sequelize.sync();
   })
   .then(() => {
     console.log('Database synchronized...');
