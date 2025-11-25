@@ -1,9 +1,11 @@
-const Invoice = require('../models/Invoice');
-const InvoiceItem = require('../models/InvoiceItem');
-const Product = require('../models/Product');
-const Address = require('../models/Address');
-const Customer = require('../models/Customer');
-const BusinessDetail = require('../models/BusinessDetail');
+const { Invoice, InvoiceItem, Product, Address, Customer, BusinessDetail } = require('../models');
+
+
+const fs = require("fs"); // 👈 ADD THIS LINE
+
+
+
+
 const generateInvoice = require('../utils/invoiceGenerator');
 const path = require('path');
 const { invoiceValidationSchema, invoiceItemValidationSchema } = require('../utils/validators');
@@ -70,7 +72,7 @@ exports.createInvoice = async (req, res) => {
 
     // Validate invoiceDetails
     console.log("🧾 Validating invoiceDetails...");
-    const { error: invoiceError } = invoiceValidationSchema.validate(invoiceDetails);
+    const { error: invoiceError } = invoiceValidationSchema.validate(invoiceDetails, { allowUnknown: true });
     if (invoiceError) {
       console.error("❌ Invoice validation failed:", invoiceError.details[0].message);
       return res.status(400).json({ error: invoiceError.details[0].message });
@@ -78,7 +80,7 @@ exports.createInvoice = async (req, res) => {
 
     // Validate invoiceItems
     console.log("📦 Validating invoiceItems...");
-    const { error: itemsError } = invoiceItemValidationSchema.validate(invoiceItems);
+    const { error: itemsError } = invoiceItemValidationSchema.validate(invoiceItems, { allowUnknown: true });
     if (itemsError) {
       console.error("❌ Invoice items validation failed:", itemsError.details[0].message);
       return res.status(400).json({ error: itemsError.details[0].message });
@@ -211,7 +213,7 @@ exports.getAllInvoices = async (req, res) => {
     const invoices = await Invoice.findAll({
       where: { is_deleted: false },
       include: [
-         {
+        {
           model: InvoiceItem,
           as: 'items', // ✅ Include product line items
         },
@@ -282,22 +284,31 @@ exports.updateInvoice = async (req, res) => {
     const { invoiceDetails, invoiceItems } = req.body;
     const invoiceId = req.params.id;
 
+    console.log("🧾 Incoming invoiceDetails:", JSON.stringify(invoiceDetails, null, 2));
+    console.log("📦 Incoming invoiceItems:", JSON.stringify(invoiceItems, null, 2));
     console.log("🧾 Updating invoice:", invoiceId);
 
-    // Validate invoice details and items
+    // ✅ Perform Joi validation first
     const { error: invoiceError } = invoiceValidationSchema.validate(invoiceDetails);
-    if (invoiceError)
-      return res.status(400).json({ error: invoiceError.details[0].message });
-
     const { error: itemsError } = invoiceItemValidationSchema.validate(invoiceItems);
-    if (itemsError)
-      return res.status(400).json({ error: itemsError.details[0].message });
 
-    // Check invoice exists
+    // ✅ Then check for errors
+    if (invoiceError) {
+      console.error("❌ Invoice Joi validation failed:", invoiceError.details);
+      return res.status(400).json({ error: invoiceError.details[0].message });
+    }
+
+    if (itemsError) {
+      console.error("❌ InvoiceItems Joi validation failed:", itemsError.details);
+      return res.status(400).json({ error: itemsError.details[0].message });
+    }
+
+    // === Check invoice exists ===
     const invoice = await Invoice.findOne({
       where: { id: invoiceId, is_deleted: false },
       transaction,
     });
+
     if (!invoice) {
       await transaction.rollback();
       return res.status(404).json({ error: "Invoice not found" });
@@ -316,9 +327,7 @@ exports.updateInvoice = async (req, res) => {
     const incomingItemIds = invoiceItems.map((it) => it.id).filter(Boolean);
 
     // === 1️⃣ Delete items that were removed ===
-    const itemsToDelete = existingItemIds.filter(
-      (id) => !incomingItemIds.includes(id)
-    );
+    const itemsToDelete = existingItemIds.filter((id) => !incomingItemIds.includes(id));
     if (itemsToDelete.length > 0) {
       await InvoiceItem.destroy({
         where: { id: itemsToDelete },
@@ -415,6 +424,7 @@ exports.updateInvoice = async (req, res) => {
   }
 };
 
+
 exports.deleteInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findByPk(req.params.id, { where: { is_deleted: false } });
@@ -430,21 +440,47 @@ exports.deleteInvoice = async (req, res) => {
   }
 };
 
+
 exports.downloadInvoice = async (req, res) => {
   try {
-    const invoice = await Invoice.findById(req.params.id, { where: { is_deleted: false } }).populate('customer products template businessDetails');
-    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+    const invoiceId = req.params.id;
 
-    const outputPath = path.join(__dirname, `../invoices/invoice_${invoice._id}.pdf`);
-    await generateInvoice(invoice, invoice.template.content, outputPath);
-
-    res.download(outputPath, `invoice_${invoice._id}.pdf`, (err) => {
-      if (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to download invoice' });
-      }
+    // ✅ Fetch invoice with all relations (Sequelize style)
+    const invoice = await Invoice.findByPk(invoiceId, {
+      where: { is_deleted: false },
+      include: [
+        { model: InvoiceItem, as: "items" },
+        { model: BusinessDetail, as: "business" },
+        { model: Customer, as: "customer" },
+        { model: Address, as: "billingAddress" },
+        { model: Address, as: "shippingAddress" },
+      ],
     });
+
+    if (!invoice) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    // ✅ Ensure output directory exists
+    const invoicesDir = path.join(__dirname, "../invoices");
+    if (!fs.existsSync(invoicesDir)) fs.mkdirSync(invoicesDir, { recursive: true });
+
+    // ✅ Define output file path
+    const outputPath = path.join(invoicesDir, `invoice_${invoice.invoice_number}.pdf`);
+
+    // ✅ Generate PDF
+    console.log("🧾 Invoice data loaded:", JSON.stringify(invoice, null, 2));
+    await generateInvoice(invoice, outputPath);
+
+    // ✅ Send file for download
+    res.download(outputPath, `invoice_${invoice.invoice_number}.pdf`, (err) => {
+      if (err) {
+        console.error("Error sending file:", err);
+        res.status(500).json({ error: "Failed to download invoice" });
+      }
+    }, 500);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("❌ Invoice download error:", error);
+    res.status(500).json({ error: "Failed to generate invoice PDF" });
   }
 };

@@ -79,7 +79,9 @@ const InvoiceItem = sequelize.define('InvoiceItem', {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
-}, {
+}, 
+
+{
   tableName: 'invoice_items',
   timestamps: false,
 });
