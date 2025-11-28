@@ -89,43 +89,48 @@ exports.createInvoice = async (req, res) => {
     }
 
     // Validate that provided billing/shipping addresses (if any) belong to the customer
-    const providedAddressIds = [invoiceDetails.billing_address_id, invoiceDetails.shipping_address_id]
-      .filter(id => id !== undefined && id !== null);
+    const providedAddressIds = [
+      invoiceDetails.billing_address_id,
+      invoiceDetails.shipping_address_id
+    ].filter(id => id !== undefined && id !== null);
 
-    if (providedAddressIds.length > 0) {
+    // ✅ Deduplicate IDs to avoid count mismatch if billing & shipping are same
+    const uniqueAddressIds = [...new Set(providedAddressIds)];
+
+    if (uniqueAddressIds.length > 0) {
       const addressValidation = await Address.findAll({
         where: {
-          id: { [Op.in]: providedAddressIds },
+          id: { [Op.in]: uniqueAddressIds },
           customerId: invoiceDetails.customer_id,
           is_deleted: false
         }
       });
 
-      if (addressValidation.length !== providedAddressIds.length) {
+      if (addressValidation.length !== uniqueAddressIds.length) {
         await transaction.rollback();
         return res.status(400).json({
           error: 'Invalid address(es). Provided address IDs must belong to the selected customer and not be deleted.'
         });
       }
 
-      // If billing_address_id provided, validate its type
+      // If billing_address_id provided, check if it exists (type check removed)
       if (invoiceDetails.billing_address_id) {
         const billingAddress = addressValidation.find(addr => addr.id === invoiceDetails.billing_address_id);
-        if (!billingAddress || billingAddress.address_type !== 'billing') {
+        if (!billingAddress) {
           await transaction.rollback();
           return res.status(400).json({
-            error: 'Selected billing address must be of type "billing" and belong to the customer.'
+            error: 'Selected billing address not found or does not belong to the customer.'
           });
         }
       }
 
-      // If shipping_address_id provided, validate its type
+      // If shipping_address_id provided, check if it exists (type check removed)
       if (invoiceDetails.shipping_address_id) {
         const shippingAddress = addressValidation.find(addr => addr.id === invoiceDetails.shipping_address_id);
-        if (!shippingAddress || shippingAddress.address_type !== 'shipping') {
+        if (!shippingAddress) {
           await transaction.rollback();
           return res.status(400).json({
-            error: 'Selected shipping address must be of type "shipping" and belong to the customer.'
+            error: 'Selected shipping address not found or does not belong to the customer.'
           });
         }
       }
