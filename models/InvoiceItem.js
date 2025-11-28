@@ -26,10 +26,16 @@ const InvoiceItem = sequelize.define('InvoiceItem', {
       key: 'id',
     },
   },
+  product_name: {
+    type: DataTypes.STRING(255),
+  },
   description: {
     type: DataTypes.TEXT,
   },
   hsn_code: {
+    type: DataTypes.STRING(50),
+  },
+  hsn_sac_code: {
     type: DataTypes.STRING(50),
   },
   unit_type: {
@@ -79,12 +85,12 @@ const InvoiceItem = sequelize.define('InvoiceItem', {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
-}, 
+},
 
-{
-  tableName: 'invoice_items',
-  timestamps: false,
-});
+  {
+    tableName: 'invoice_items',
+    timestamps: false,
+  });
 
 
 InvoiceItem.associate = (models) => {

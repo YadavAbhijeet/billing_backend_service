@@ -16,6 +16,14 @@ const Invoice = sequelize.define('Invoice', {
     unique: true,
     allowNull: false,
   },
+  challan_no: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
+  po_no: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
   business_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -50,8 +58,6 @@ const Invoice = sequelize.define('Invoice', {
   place_of_supply: {
     type: DataTypes.STRING(100),
   },
-
-
   subtotal: {
     type: DataTypes.DECIMAL(10, 2),
   },
@@ -84,17 +90,20 @@ const Invoice = sequelize.define('Invoice', {
     type: DataTypes.ENUM('Pending', 'Paid', 'Partially Paid'),
     defaultValue: 'Pending',
   },
+  amount_paid: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0,
+  },
+  amount_remaining: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0,
+  },
   notes: {
     type: DataTypes.TEXT,
   },
-
- 
-
-  // Generic discount/tax summary fields (optional)
   discount: {
     type: DataTypes.DECIMAL(10, 2),
   },
- 
   billing_address_id: {
     type: DataTypes.INTEGER,
     references: {
@@ -111,7 +120,6 @@ const Invoice = sequelize.define('Invoice', {
     },
     allowNull: true,
   },
- 
   template_id: {
     type: DataTypes.INTEGER,
     references: {
@@ -161,7 +169,6 @@ const Invoice = sequelize.define('Invoice', {
         ]
       }
     ]
-
   }
 });
 
@@ -221,8 +228,11 @@ Invoice.associate = (models) => {
     onDelete: 'CASCADE',
     hooks: true,
   });
+  Invoice.hasMany(models.Payment, {
+    foreignKey: 'invoice_id',
+    as: 'payments',
+    onDelete: 'CASCADE',
+  });
 };
-
-
 
 module.exports = Invoice;

@@ -2,7 +2,7 @@ const Joi = require('joi');
 
 // Validation schema for Invoice
 const invoiceValidationSchema = Joi.object({
-   id: Joi.number().integer().optional(),
+  id: Joi.number().integer().optional(),
   invoice_number: Joi.string().required(),
   business_id: Joi.number().integer().optional(), // can be auto-handled in controller
   customer_id: Joi.number().integer().required(),
@@ -13,7 +13,7 @@ const invoiceValidationSchema = Joi.object({
   subtotal: Joi.number().precision(2).optional(),
   cgst_amount: Joi.number().precision(2).allow(0, null).optional(),
   sgst_amount: Joi.number().precision(2).allow(0, null).optional(),
-  igst_amount: Joi.number().precision(2).allow(0,null).optional(),
+  igst_amount: Joi.number().precision(2).allow(0, null).optional(),
   total_tax: Joi.number().precision(2).optional(),
 
   discount_amount: Joi.number().precision(2).optional(),
@@ -27,6 +27,8 @@ const invoiceValidationSchema = Joi.object({
   payment_status: Joi.string().allow("", null)
     .valid('Pending', 'Paid', 'Partially Paid', 'Overdue')
     .default('Pending'),
+  amount_paid: Joi.number().precision(2).min(0).optional(),
+  amount_remaining: Joi.number().precision(2).min(0).optional(),
   notes: Joi.string().optional(),
   template_id: Joi.number().integer().allow(null).optional(),
   pdf_path: Joi.string().allow("", null).optional(),

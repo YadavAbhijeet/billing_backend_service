@@ -1,11 +1,5 @@
 const { Invoice, InvoiceItem, Product, Address, Customer, BusinessDetail } = require('../models');
-
-
-const fs = require("fs"); // 👈 ADD THIS LINE
-
-
-
-
+const fs = require("fs");
 const generateInvoice = require('../utils/invoiceGenerator');
 const path = require('path');
 const { invoiceValidationSchema, invoiceItemValidationSchema } = require('../utils/validators');
@@ -75,7 +69,11 @@ exports.createInvoice = async (req, res) => {
     const { error: invoiceError } = invoiceValidationSchema.validate(invoiceDetails, { allowUnknown: true });
     if (invoiceError) {
       console.error("❌ Invoice validation failed:", invoiceError.details[0].message);
-      return res.status(400).json({ error: invoiceError.details[0].message });
+      console.error("❌ Full details:", JSON.stringify(invoiceError.details));
+      return res.status(400).json({
+        error: `Invoice Validation Error: ${invoiceError.details[0].message}`,
+        details: invoiceError.details
+      });
     }
 
     // Validate invoiceItems
@@ -83,9 +81,12 @@ exports.createInvoice = async (req, res) => {
     const { error: itemsError } = invoiceItemValidationSchema.validate(invoiceItems, { allowUnknown: true });
     if (itemsError) {
       console.error("❌ Invoice items validation failed:", itemsError.details[0].message);
-      return res.status(400).json({ error: itemsError.details[0].message });
+      console.error("❌ Full details:", JSON.stringify(itemsError.details));
+      return res.status(400).json({
+        error: `Item Validation Error: ${itemsError.details[0].message}`,
+        details: itemsError.details
+      });
     }
-
 
     // Validate that provided billing/shipping addresses (if any) belong to the customer
     const providedAddressIds = [invoiceDetails.billing_address_id, invoiceDetails.shipping_address_id]
