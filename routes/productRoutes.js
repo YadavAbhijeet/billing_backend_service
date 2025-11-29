@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productController');
+const { authenticateToken } = require('../middleware/authMiddleware');
+
+// Protect all product routes
+router.use(authenticateToken);
 
 router.post('/', productController.createProduct);
 router.get('/', productController.getAllProducts);

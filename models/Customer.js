@@ -30,6 +30,14 @@ const Customer = sequelize.define('Customer', {
   pan_no: {
     type: DataTypes.STRING(15),
   },
+  user_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

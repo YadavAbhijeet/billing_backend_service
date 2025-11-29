@@ -138,6 +138,14 @@ const Invoice = sequelize.define('Invoice', {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
+  user_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  }
 }, {
   tableName: 'invoices',
   timestamps: false,
@@ -232,6 +240,10 @@ Invoice.associate = (models) => {
     foreignKey: 'invoice_id',
     as: 'payments',
     onDelete: 'CASCADE',
+  });
+  Invoice.belongsTo(models.User, {
+    foreignKey: 'user_id',
+    as: 'user'
   });
 };
 

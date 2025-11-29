@@ -16,14 +16,15 @@ exports.createCustomer = async (req, res) => {
       addresses
     } = req.body;
 
-    // Create customer
+    // Create customer with user_id
     const customer = await Customer.create({
       company_name,
       primary_contact_person,
       primary_email,
       primary_phone,
       gstin,
-      pan_no
+      pan_no,
+      user_id: req.user.id // ✅ Attach user_id
     }, { transaction: t });
 
     // Create addresses if provided
@@ -69,7 +70,10 @@ exports.createCustomer = async (req, res) => {
 exports.getAllCustomers = async (req, res) => {
   try {
     const customers = await Customer.findAll({
-      where: { is_deleted: false },
+      where: {
+        is_deleted: false,
+        user_id: req.user.id // ✅ Filter by user
+      },
       include: [{
         model: Address,
         as: 'addresses',
@@ -86,7 +90,11 @@ exports.getAllCustomers = async (req, res) => {
 exports.getCustomerById = async (req, res) => {
   try {
     const customer = await Customer.findOne({
-      where: { id: req.params.id, is_deleted: false },
+      where: {
+        id: req.params.id,
+        is_deleted: false,
+        user_id: req.user.id // ✅ Security check
+      },
       include: [{
         model: Address,
         as: 'addresses',
@@ -114,7 +122,14 @@ exports.updateCustomer = async (req, res) => {
       primary_phone,
       gstin,
       pan_no
-    }, { where: { id: req.params.id, is_deleted: false }, transaction: t });
+    }, {
+      where: {
+        id: req.params.id,
+        is_deleted: false,
+        user_id: req.user.id // ✅ Security check
+      },
+      transaction: t
+    });
 
     if (!updated) {
       await t.rollback();
@@ -182,7 +197,14 @@ exports.updateCustomer = async (req, res) => {
 exports.deleteCustomer = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const customer = await Customer.findOne({ where: { id: req.params.id, is_deleted: false }, transaction: t });
+    const customer = await Customer.findOne({
+      where: {
+        id: req.params.id,
+        is_deleted: false,
+        user_id: req.user.id // ✅ Security check
+      },
+      transaction: t
+    });
     if (!customer) {
       await t.rollback();
       return res.status(404).json({ error: 'Customer not found' });

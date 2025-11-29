@@ -39,6 +39,14 @@ const Product = sequelize.define('Product', {
     type: DataTypes.BOOLEAN,
     defaultValue: false, // Add is_deleted flag for soft delete
   },
+  user_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

@@ -7,9 +7,9 @@ const sequelize = require('../config/database');
 const { where, Op } = require('sequelize');
 
 // Helper function to get default business details
-async function getDefaultBusinessId() {
+async function getDefaultBusinessId(userId) {
   const business = await BusinessDetail.findOne({
-    where: { is_deleted: false },
+    where: { is_deleted: false, user_id: userId },
     order: [['id', 'ASC']]
   });
   return business ? business.id : null;
@@ -24,6 +24,12 @@ exports.createInvoice = async (req, res) => {
     const body = req.body || {};
     let invoiceDetails = body.invoiceDetails || body;
     let invoiceItems = body.invoiceItems || body.invoice_items || [];
+
+
+    // ✅ Attach user_id from authenticated request
+    if (req.user) {
+      invoiceDetails.user_id = req.user.id;
+    }
 
     // Defensive: if invoiceDetails was the whole body but contains invoiceItems/invoice_items key, extract it
     if (invoiceDetails && (invoiceDetails.invoiceItems || invoiceDetails.invoice_items)) {
@@ -54,7 +60,7 @@ exports.createInvoice = async (req, res) => {
       }
     } else {
       // If business_id is not provided, get the default business
-      const defaultBusinessId = await getDefaultBusinessId();
+      const defaultBusinessId = await getDefaultBusinessId(req.user.id);
       if (!defaultBusinessId) {
         await transaction.rollback();
         return res.status(400).json({
@@ -217,7 +223,7 @@ exports.createInvoice = async (req, res) => {
 exports.getAllInvoices = async (req, res) => {
   try {
     const invoices = await Invoice.findAll({
-      where: { is_deleted: false },
+      where: { is_deleted: false, user_id: req.user.id },
       include: [
         {
           model: InvoiceItem,
@@ -251,7 +257,8 @@ exports.getInvoiceById = async (req, res) => {
     const invoice = await Invoice.findOne({
       where: {
         id: req.params.id,
-        is_deleted: false
+        is_deleted: false,
+        user_id: req.user.id
       },
       include: [
         {
@@ -311,7 +318,7 @@ exports.updateInvoice = async (req, res) => {
 
     // === Check invoice exists ===
     const invoice = await Invoice.findOne({
-      where: { id: invoiceId, is_deleted: false },
+      where: { id: invoiceId, is_deleted: false, user_id: req.user.id },
       transaction,
     });
 
@@ -433,7 +440,7 @@ exports.updateInvoice = async (req, res) => {
 
 exports.deleteInvoice = async (req, res) => {
   try {
-    const invoice = await Invoice.findByPk(req.params.id, { where: { is_deleted: false } });
+    const invoice = await Invoice.findOne({ where: { id: req.params.id, is_deleted: false, user_id: req.user.id } });
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
 
     // Set is_deleted flag to true for soft delete
@@ -452,8 +459,8 @@ exports.downloadInvoice = async (req, res) => {
     const invoiceId = req.params.id;
 
     // ✅ Fetch invoice with all relations (Sequelize style)
-    const invoice = await Invoice.findByPk(invoiceId, {
-      where: { is_deleted: false },
+    const invoice = await Invoice.findOne({
+      where: { id: invoiceId, is_deleted: false, user_id: req.user.id },
       include: [
         { model: InvoiceItem, as: "items" },
         { model: BusinessDetail, as: "business" },

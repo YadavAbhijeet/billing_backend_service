@@ -3,7 +3,10 @@ const Product = require('../models/Product');
 // ✅ Create Product
 exports.createProduct = async (req, res) => {
   try {
-    const product = await Product.create(req.body);
+    const product = await Product.create({
+      ...req.body,
+      user_id: req.user.id // ✅ Attach user_id
+    });
     res.status(201).json({ message: 'Product created successfully', product });
   } catch (error) {
     console.error('❌ Error creating product:', error);
@@ -14,7 +17,12 @@ exports.createProduct = async (req, res) => {
 // ✅ Get all Products
 exports.getAllProducts = async (req, res) => {
   try {
-    const products = await Product.findAll({ where: { is_deleted: false } });
+    const products = await Product.findAll({
+      where: {
+        is_deleted: false,
+        user_id: req.user.id // ✅ Filter by user
+      }
+    });
     res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -25,7 +33,11 @@ exports.getAllProducts = async (req, res) => {
 exports.getProductById = async (req, res) => {
   try {
     const product = await Product.findOne({
-      where: { id: req.params.id, is_deleted: false },
+      where: {
+        id: req.params.id,
+        is_deleted: false,
+        user_id: req.user.id // ✅ Security check
+      },
     });
     if (!product) return res.status(404).json({ error: 'Product not found' });
     res.status(200).json(product);
@@ -38,7 +50,11 @@ exports.getProductById = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const product = await Product.findOne({
-      where: { id: req.params.id, is_deleted: false },
+      where: {
+        id: req.params.id,
+        is_deleted: false,
+        user_id: req.user.id // ✅ Security check
+      },
     });
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
@@ -53,7 +69,11 @@ exports.updateProduct = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
   try {
     const product = await Product.findOne({
-      where: { id: req.params.id, is_deleted: false },
+      where: {
+        id: req.params.id,
+        is_deleted: false,
+        user_id: req.user.id // ✅ Security check
+      },
     });
     if (!product) return res.status(404).json({ error: 'Product not found' });
 

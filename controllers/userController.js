@@ -15,9 +15,10 @@ exports.getAllUsers = async (req, res) => {
 exports.createUser = async (req, res) => {
     try {
         const { username, password, role } = req.body;
+        const trimmedUsername = username.trim();
 
         // Check if user exists
-        const existingUser = await User.findOne({ where: { username } });
+        const existingUser = await User.findOne({ where: { username: trimmedUsername } });
         if (existingUser) {
             return res.status(400).json({ error: 'Username already exists' });
         }
@@ -26,7 +27,7 @@ exports.createUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const newUser = await User.create({
-            username,
+            username: trimmedUsername,
             password: hashedPassword,
             role: role || 'user'
         });

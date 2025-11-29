@@ -7,9 +7,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 exports.login = async (req, res) => {
     try {
         const { username, password } = req.body;
+        const trimmedUsername = username.trim();
 
         // Find user
-        const user = await User.findOne({ where: { username } });
+        const user = await User.findOne({ where: { username: trimmedUsername } });
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }

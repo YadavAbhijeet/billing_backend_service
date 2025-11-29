@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const customerController = require('../controllers/customerController');
+const { authenticateToken } = require('../middleware/authMiddleware');
+
+// Protect all customer routes
+router.use(authenticateToken);
 
 // Define routes for customers
 router.post('/', customerController.createCustomer);

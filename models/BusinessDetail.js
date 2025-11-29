@@ -62,6 +62,14 @@ const BusinessDetail = sequelize.define('BusinessDetail', {
   signature_url: {
     type: DataTypes.TEXT,
   },
+  user_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
