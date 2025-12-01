@@ -13,8 +13,8 @@ const Invoice = sequelize.define('Invoice', {
   },
   invoice_number: {
     type: DataTypes.STRING(50),
-    unique: true,
     allowNull: false,
+    // unique: true removed to allow per-user uniqueness
   },
   challan_no: {
     type: DataTypes.STRING(50),
@@ -149,6 +149,12 @@ const Invoice = sequelize.define('Invoice', {
 }, {
   tableName: 'invoices',
   timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['invoice_number', 'user_id']
+    }
+  ],
   defaultScope: {
     include: [
       {
