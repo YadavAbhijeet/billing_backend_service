@@ -7,10 +7,15 @@ require('./models/Customer');
 require('./models/Address');
 require('./models/BusinessDetail');
 require('./models/Invoice');
+require('./models/InvoiceChallan');
+require('./models/InvoiceItem');
 require('./models/InvoiceTemplate');
 require('./models/Product');
 require('./models/Payment');
 require('./models/User');
+
+// Load associations
+require('./models/associations');
 
 
 

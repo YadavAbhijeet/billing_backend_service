@@ -13,6 +13,7 @@ exports.createCustomer = async (req, res) => {
       primary_phone,
       gstin,
       pan_no,
+      payment_terms,
       addresses
     } = req.body;
 
@@ -24,6 +25,7 @@ exports.createCustomer = async (req, res) => {
       primary_phone,
       gstin,
       pan_no,
+      payment_terms: payment_terms || 0,
       user_id: req.user.id // ✅ Attach user_id
     }, { transaction: t });
 
@@ -112,7 +114,7 @@ exports.getCustomerById = async (req, res) => {
 exports.updateCustomer = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { company_name, primary_contact_person, primary_email, primary_phone, gstin, pan_no, addresses } = req.body;
+    const { company_name, primary_contact_person, primary_email, primary_phone, gstin, pan_no, payment_terms, addresses } = req.body;
 
     // Update customer
     const [updated] = await Customer.update({
@@ -121,7 +123,8 @@ exports.updateCustomer = async (req, res) => {
       primary_email,
       primary_phone,
       gstin,
-      pan_no
+      pan_no,
+      payment_terms: payment_terms !== undefined ? payment_terms : 0
     }, {
       where: {
         id: req.params.id,

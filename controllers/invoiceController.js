@@ -1,4 +1,4 @@
-const { Invoice, InvoiceItem, Product, Address, Customer, BusinessDetail } = require('../models');
+const { Invoice, InvoiceItem, Product, Address, Customer, BusinessDetail, InvoiceChallan } = require('../models');
 const fs = require("fs");
 const generateInvoice = require('../utils/invoiceGenerator');
 const path = require('path');
@@ -144,6 +144,9 @@ exports.createInvoice = async (req, res) => {
 
     // Create or update the invoice
     let invoice;
+    let challans = invoiceDetails.challans || [];
+    if (invoiceDetails.challans) delete invoiceDetails.challans;
+
     if (invoiceDetails.id) {
       // Update existing invoice
       await Invoice.update(invoiceDetails, { where: { id: invoiceDetails.id }, transaction });
@@ -151,6 +154,26 @@ exports.createInvoice = async (req, res) => {
     } else {
       // Create new invoice
       invoice = await Invoice.create(invoiceDetails, { transaction });
+    }
+
+    // Handle Challans
+    console.log('🔍 Challans received:', JSON.stringify(challans, null, 2));
+    if (challans && Array.isArray(challans)) {
+      // If updating, delete existing challans first (simple sync)
+      if (invoiceDetails.id) {
+         await InvoiceChallan.destroy({ where: { invoice_id: invoice.id }, transaction });
+      }
+
+      if (challans.length > 0) {
+        const challanData = challans.map(c => ({
+          invoice_id: invoice.id,
+          challan_no: c.challan_no,
+          challan_date: c.challan_date
+        }));
+        console.log('💾 Saving challan data:', JSON.stringify(challanData, null, 2));
+        await InvoiceChallan.bulkCreate(challanData, { transaction });
+        console.log(`✅ Saved ${challanData.length} challans for invoice ${invoice.id}`);
+      }
     }
 
     const processedItems = await Promise.all(
@@ -224,10 +247,15 @@ exports.getAllInvoices = async (req, res) => {
   try {
     const invoices = await Invoice.findAll({
       where: { is_deleted: false, user_id: req.user.id },
+      order: [['created_at', 'DESC']], // Show newest invoices first
       include: [
         {
           model: InvoiceItem,
-          as: 'items', // ✅ Include product line items
+          as: 'items',
+        },
+        {
+          model: InvoiceChallan,
+          as: 'challans',
         },
         {
           model: Address,
@@ -264,6 +292,10 @@ exports.getInvoiceById = async (req, res) => {
         {
           model: InvoiceItem,
           as: 'items',
+        },
+        {
+          model: InvoiceChallan,
+          as: 'challans',
         },
         {
           model: Address,
@@ -328,7 +360,23 @@ exports.updateInvoice = async (req, res) => {
     }
 
     // === Update invoice header ===
+    let challans = invoiceDetails.challans;
+    if (invoiceDetails.challans) delete invoiceDetails.challans;
+    
     await invoice.update(invoiceDetails, { transaction });
+
+    // Handle Challans
+    if (challans && Array.isArray(challans)) {
+       await InvoiceChallan.destroy({ where: { invoice_id: invoiceId }, transaction });
+       if (challans.length > 0) {
+        const challanData = challans.map(c => ({
+          invoice_id: invoiceId,
+          challan_no: c.challan_no,
+          challan_date: c.challan_date
+        }));
+        await InvoiceChallan.bulkCreate(challanData, { transaction });
+      }
+    }
 
     // === Fetch existing items ===
     const existingItems = await InvoiceItem.findAll({
@@ -437,7 +485,6 @@ exports.updateInvoice = async (req, res) => {
   }
 };
 
-
 exports.deleteInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findOne({ where: { id: req.params.id, is_deleted: false, user_id: req.user.id } });
@@ -452,7 +499,6 @@ exports.deleteInvoice = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 exports.downloadInvoice = async (req, res) => {
   try {

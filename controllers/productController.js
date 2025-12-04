@@ -21,7 +21,8 @@ exports.getAllProducts = async (req, res) => {
       where: {
         is_deleted: false,
         user_id: req.user.id // ✅ Filter by user
-      }
+      },
+      order: [['created_at', 'DESC']] // ✅ Sort by newest first
     });
     res.status(200).json(products);
   } catch (error) {

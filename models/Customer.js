@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const Address = require('./Address');
 
 const Customer = sequelize.define('Customer', {
   id: {
@@ -46,20 +45,13 @@ const Customer = sequelize.define('Customer', {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
+  payment_terms: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0, // 0 means "Due on Receipt" or "Immediate"
+  },
 }, {
   tableName: 'customers',
   timestamps: false,
-});
-
-// Define the relationship with Address model
-Customer.hasMany(Address, {
-  foreignKey: 'customerId',
-  as: 'addresses'
-});
-
-Address.belongsTo(Customer, {
-  foreignKey: 'customerId',
-  as: 'customer'
 });
 
 module.exports = Customer;
