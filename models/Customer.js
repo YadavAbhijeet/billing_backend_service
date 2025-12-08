@@ -25,21 +25,19 @@ const Customer = sequelize.define('Customer', {
   },
   gstin: {
     type: DataTypes.STRING(20),
+    allowNull: true,
   },
   pan_no: {
     type: DataTypes.STRING(15),
+    allowNull: true,
   },
   user_id: {
     type: DataTypes.INTEGER,
-    allowNull: true,
+    allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     }
-  },
-  created_at: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
   },
   is_deleted: {
     type: DataTypes.BOOLEAN,
@@ -47,11 +45,12 @@ const Customer = sequelize.define('Customer', {
   },
   payment_terms: {
     type: DataTypes.INTEGER,
-    defaultValue: 0, // 0 means "Due on Receipt" or "Immediate"
+    defaultValue: 0, // 0 means "Due on Receipt"
   },
 }, {
   tableName: 'customers',
-  timestamps: false,
+  timestamps: true,
+  underscored: true,
 });
 
 module.exports = Customer;

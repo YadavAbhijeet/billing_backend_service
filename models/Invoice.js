@@ -139,10 +139,6 @@ const Invoice = sequelize.define('Invoice', {
     pdf_path: {
         type: DataTypes.TEXT,
     },
-    created_at: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW,
-    },
     is_deleted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
@@ -157,7 +153,8 @@ const Invoice = sequelize.define('Invoice', {
     }
 }, {
     tableName: 'invoices',
-    timestamps: false,
+    timestamps: true,
+    underscored: true,
     indexes: [
         {
             unique: true,
@@ -254,6 +251,11 @@ Invoice.associate = (models) => {
     Invoice.hasMany(models.InvoiceChallan, {
         foreignKey: 'invoice_id',
         as: 'challans',
+        onDelete: 'CASCADE',
+    });
+    Invoice.hasMany(models.InvoicePO, {
+        foreignKey: 'invoice_id',
+        as: 'pos',
         onDelete: 'CASCADE',
     });
     Invoice.hasMany(models.Payment, {

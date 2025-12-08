@@ -8,6 +8,7 @@ require('./models/Address');
 require('./models/BusinessDetail');
 require('./models/Invoice');
 require('./models/InvoiceChallan');
+require('./models/InvoicePO');
 require('./models/InvoiceItem');
 require('./models/InvoiceTemplate');
 require('./models/Product');

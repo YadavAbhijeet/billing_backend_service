@@ -76,15 +76,18 @@ exports.getAllCustomers = async (req, res) => {
         is_deleted: false,
         user_id: req.user.id // ✅ Filter by user
       },
+      order: [['updatedAt', 'DESC']], // ✅ Sort by last updated
       include: [{
         model: Address,
         as: 'addresses',
         where: { is_deleted: false },
-        required: false
+        required: false,
+        order: [['created_at', 'DESC']] // ✅ Use created_at which exists
       }]
     });
     res.status(200).json(customers);
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: error.message });
   }
 };
