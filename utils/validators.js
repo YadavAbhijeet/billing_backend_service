@@ -24,14 +24,11 @@ const invoiceValidationSchema = Joi.object({
     igst_amount: Joi.number().allow(0, null).optional(),
     total_tax: Joi.number().optional(),
 
-    discount_amount: Joi.number().optional(),
-    discount: Joi.number().allow(null, 0).optional(), // ✅ already correct
     tax: Joi.number().optional(),
     total_amount: Joi.number().required(),
     round_off_amount: Joi.number().optional(),
 
     amount_in_words: Joi.string().allow('', null).optional(),
-    payment_mode: Joi.string().allow("", null).optional(),
     payment_status: Joi.string().allow("", null)
         .valid('Pending', 'Paid', 'Partially Paid', 'Overdue')
         .default('Pending'),
@@ -82,7 +79,6 @@ const invoiceItemValidationSchema = Joi.array().items(
         total_amount: Joi.number().allow(0).required(),
         description: Joi.string().allow("", null).optional(),
 
-        discount: Joi.number().allow(null, 0).optional(),
         // Allow common product/item fields used by frontend
         hsn_sac_code: Joi.string().optional().allow('', null),
         hsn_code: Joi.string().optional().allow('', null),

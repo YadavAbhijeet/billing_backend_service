@@ -82,18 +82,12 @@ const Invoice = sequelize.define('Invoice', {
     total_tax: {
         type: DataTypes.DECIMAL(10, 2),
     },
-    discount_amount: {
-        type: DataTypes.DECIMAL(10, 2),
-    },
     total_amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
     },
     amount_in_words: {
         type: DataTypes.STRING(255),
-    },
-    payment_mode: {
-        type: DataTypes.STRING(50),
     },
     payment_status: {
         type: DataTypes.ENUM('Pending', 'Paid', 'Partially Paid'),
@@ -109,9 +103,6 @@ const Invoice = sequelize.define('Invoice', {
     },
     notes: {
         type: DataTypes.TEXT,
-    },
-    discount: {
-        type: DataTypes.DECIMAL(10, 2),
     },
     billing_address_id: {
         type: DataTypes.INTEGER,

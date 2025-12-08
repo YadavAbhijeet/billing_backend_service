@@ -52,10 +52,6 @@ const InvoiceItem = sequelize.define('InvoiceItem', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
-  discount: {
-    type: DataTypes.DECIMAL(10, 2),
-    defaultValue: 0,
-  },
   taxable_value: {
     type: DataTypes.DECIMAL(10, 2),
   },

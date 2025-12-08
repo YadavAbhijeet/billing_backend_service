@@ -143,7 +143,6 @@ async function generateInvoice(invoice, outputPath) {
     stack: [
       { text: `Subtotal: ₹${invoice.subtotal?.toFixed(2) || "0"}`, alignment: "right" },
       { text: `Total Tax: ₹${invoice.total_tax?.toFixed(2) || "0"}`, alignment: "right" },
-      { text: `Discount: ₹${invoice.discount_amount?.toFixed(2) || "0"}`, alignment: "right" },
       { text: `Grand Total: ₹${invoice.total_amount?.toFixed(2) || "0"}`, style: "grandTotal" },
       { text: `Amount in Words: ${invoice.amount_in_words || "-"}`, style: "small", margin: [0, 2, 0, 0], alignment: "right" },
     ],
@@ -165,12 +164,12 @@ async function generateInvoice(invoice, outputPath) {
         },
         business.signature_url
           ? {
-              image: business.signature_url,
-              width: 80,
-              height: 40,
-              alignment: "right",
-              margin: [0, 5, 0, 0],
-            }
+            image: business.signature_url,
+            width: 80,
+            height: 40,
+            alignment: "right",
+            margin: [0, 5, 0, 0],
+          }
           : {},
         { text: "Authorized Signatory", alignment: "right", style: "small" },
       ],
