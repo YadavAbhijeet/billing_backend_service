@@ -76,13 +76,12 @@ exports.getAllCustomers = async (req, res) => {
         is_deleted: false,
         user_id: req.user.id // ✅ Filter by user
       },
-      order: [['updatedAt', 'DESC']], // ✅ Sort by last updated
+      order: [['id', 'DESC']], // ✅ Sort by newest (safest column)
       include: [{
         model: Address,
         as: 'addresses',
         where: { is_deleted: false },
-        required: false,
-        order: [['created_at', 'DESC']] // ✅ Use created_at which exists
+        required: false
       }]
     });
     res.status(200).json(customers);

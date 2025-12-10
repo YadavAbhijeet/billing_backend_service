@@ -47,10 +47,24 @@ const Customer = sequelize.define('Customer', {
     type: DataTypes.INTEGER,
     defaultValue: 0, // 0 means "Due on Receipt"
   },
+  created_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+  updated_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
 }, {
   tableName: 'customers',
-  timestamps: true,
-  underscored: true,
+  timestamps: false,
 });
+
+Customer.associate = (models) => {
+  Customer.hasMany(models.Address, {
+    foreignKey: 'customerId',
+    as: 'addresses'
+  });
+};
 
 module.exports = Customer;

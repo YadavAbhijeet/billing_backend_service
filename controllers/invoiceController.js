@@ -234,6 +234,23 @@ exports.createInvoice = async (req, res) => {
     // Create new invoice items
     await InvoiceItem.bulkCreate(processedItems, { transaction });
 
+    // ✅ Auto-create Payment record if status is Paid
+    if (invoiceDetails.payment_status === 'Paid' || invoiceDetails.payment_status === 'Partially Paid') {
+      // For creation, we assume if it's Paid, the full amount is paid unless specified otherwise
+      // Since we don't have separate payment input here yet, we default to total_amount for Paid
+      const payAmount = invoiceDetails.amount_paid || (invoiceDetails.payment_status === 'Paid' ? invoiceDetails.total_amount : 0);
+
+      if (payAmount > 0) {
+        await Payment.create({
+          invoice_id: invoice.id,
+          amount: payAmount,
+          payment_date: invoiceDetails.invoice_date || new Date(),
+          payment_mode: invoiceDetails.payment_mode || 'Bank Transfer', // Default as we don't have this field in form yet
+          notes: 'Auto-generated from Invoice creation'
+        }, { transaction });
+      }
+    }
+
     await transaction.commit();
     res.status(201).json({ invoice, invoiceItems: processedItems });
   } catch (error) {
@@ -244,6 +261,8 @@ exports.createInvoice = async (req, res) => {
 };
 
 exports.getAllInvoices = async (req, res) => {
+  // fetching all invoices
+
   try {
     const invoices = await Invoice.findAll({
       where: { is_deleted: false, user_id: req.user.id },
@@ -253,31 +272,20 @@ exports.getAllInvoices = async (req, res) => {
           model: Payment,
           as: 'payments'
         },
-        {
-          model: InvoiceItem,
-          as: 'items',
-        },
-        {
-          model: InvoiceChallan,
-          as: 'challans',
-        },
-        {
-          model: Address,
-          as: 'billingAddress',
-          attributes: ['contact_person', 'contact_email', 'contact_phone', 'street_address', 'city', 'state', 'country', 'pincode']
-        },
-        {
-          model: Address,
-          as: 'shippingAddress',
-          attributes: ['contact_person', 'contact_email', 'contact_phone', 'street_address', 'city', 'state', 'country', 'pincode']
-        },
+
         {
           model: Customer,
           as: 'customer',
-          attributes: ['company_name', 'primary_contact_person', 'primary_email', 'primary_phone']
+          attributes: ['company_name', 'primary_contact_person', 'primary_email', 'primary_phone', 'gstin', 'pan_no']
         }
       ]
     });
+    const totalPayments = invoices.reduce((sum, inv) => sum + (inv.payments ? inv.payments.length : 0), 0);
+    console.log(`[getAllInvoices] Fetched ${invoices.length} invoices. Total payment records linked: ${totalPayments}`);
+    if (invoices.length > 0 && invoices[0].payments) {
+      console.log(`[getAllInvoices] First invoice payments:`, JSON.stringify(invoices[0].payments));
+    }
+
     res.status(200).json(invoices);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -318,12 +326,14 @@ exports.getInvoiceById = async (req, res) => {
         {
           model: Customer,
           as: 'customer',
-          attributes: ['company_name', 'primary_contact_person', 'primary_email', 'primary_phone']
+          attributes: ['company_name', 'primary_contact_person', 'primary_email', 'primary_phone', 'gstin', 'pan_no']
         }
       ]
     });
 
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+    console.log('🔍 [getInvoiceById] Customer Data:', JSON.stringify(invoice.customer, null, 2));
 
     res.status(200).json(invoice);
   } catch (error) {
@@ -475,6 +485,26 @@ exports.updateInvoice = async (req, res) => {
       }
     }
 
+
+
+    // ✅ Auto-create Payment record if status is Paid and no payments exist
+    if (invoiceDetails.payment_status === 'Paid') {
+      const existingPayments = await Payment.count({ where: { invoice_id: invoiceId, is_deleted: false }, transaction });
+
+      if (existingPayments === 0) {
+        // Fetch current invoice total if not in details
+        const currentTotal = invoiceDetails.total_amount || invoice.total_amount;
+
+        await Payment.create({
+          invoice_id: invoice.id,
+          amount: currentTotal,
+          payment_date: new Date(),
+          payment_mode: invoiceDetails.payment_mode || 'Bank Transfer',
+          notes: 'Auto-generated from Invoice update'
+        }, { transaction });
+      }
+    }
+
     await transaction.commit();
 
     const updatedInvoice = await Invoice.findOne({
@@ -485,7 +515,8 @@ exports.updateInvoice = async (req, res) => {
           as: 'payments'
         },
         {
-          model: InvoiceItem, as: "items" }],
+          model: InvoiceItem, as: "items"
+        }],
     });
 
     return res.status(200).json({
@@ -527,7 +558,8 @@ exports.downloadInvoice = async (req, res) => {
           as: 'payments'
         },
         {
-          model: InvoiceItem, as: "items" },
+          model: InvoiceItem, as: "items"
+        },
         { model: BusinessDetail, as: "business" },
         { model: Customer, as: "customer" },
         { model: Address, as: "billingAddress" },

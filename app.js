@@ -3,20 +3,8 @@ const sequelize = require('./config/database');
 const cors = require('cors');
 
 // Import all models
-require('./models/Customer');
-require('./models/Address');
-require('./models/BusinessDetail');
-require('./models/Invoice');
-require('./models/InvoiceChallan');
-require('./models/InvoicePO');
-require('./models/InvoiceItem');
-require('./models/InvoiceTemplate');
-require('./models/Product');
-require('./models/Payment');
-require('./models/User');
-
-// Load associations
-require('./models/associations');
+// Import all models and setup associations
+const db = require('./models');
 
 
 

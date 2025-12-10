@@ -7,7 +7,7 @@ const db = {};
 
 // ✅ Dynamically load all models (except this file itself)
 fs.readdirSync(__dirname)
-  .filter((file) => file.indexOf('.') !== 0 && file !== 'index.js' && file.slice(-3) === '.js')
+  .filter((file) => file.indexOf('.') !== 0 && file !== 'index.js' && file !== 'associations.js' && file.slice(-3) === '.js')
   .forEach((file) => {
     const model = require(path.join(__dirname, file));
     db[model.name] = model;
