@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { User } = require('../models');
+const { User, Invoice, BusinessDetail, Product, Customer, Address } = require('../models');
 
 exports.getAllUsers = async (req, res) => {
     try {
@@ -85,9 +85,31 @@ exports.deleteUser = async (req, res) => {
             return res.status(400).json({ error: 'Cannot delete yourself' });
         }
 
+        // 1. Delete Invoices
+        await Invoice.destroy({ where: { user_id: id } });
+
+        // 2. Delete Products
+        await Product.destroy({ where: { user_id: id } });
+
+        // 3. Delete BusinessDetails
+        await BusinessDetail.destroy({ where: { user_id: id } });
+
+        // 4. Delete Customers and their Addresses
+        const customers = await Customer.findAll({ where: { user_id: id }, attributes: ['id'] });
+        const customerIds = customers.map(c => c.id);
+
+        if (customerIds.length > 0) {
+            // Delete addresses associated with these customers
+            await Address.destroy({ where: { customerId: customerIds } });
+            // Delete customers
+            await Customer.destroy({ where: { user_id: id } });
+        }
+
+        // 5. Finally delete the user
         await user.destroy();
-        res.json({ message: 'User deleted' });
+        res.json({ message: 'User and all associated data deleted' });
     } catch (error) {
+        console.error("Delete user error:", error);
         res.status(500).json({ error: error.message });
     }
 };
