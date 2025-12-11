@@ -17,12 +17,20 @@ const invoiceTemplateRoutes = require('./routes/invoiceTemplateRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const estimateRoutes = require('./routes/estimateRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+// Middleware
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN || '*', // Allow specific origin in production, or all by default
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 
 app.use((req, res, next) => {
@@ -48,6 +56,7 @@ app.use('/api/business-details', businessDetailRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/invoices', invoiceTemplateRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/estimates', estimateRoutes);
 
 // 🔥 GLOBAL ERROR HANDLER – catches thrown errors and logs stack traces
 app.use((err, req, res, next) => {
