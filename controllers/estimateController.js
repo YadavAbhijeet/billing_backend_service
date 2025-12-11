@@ -194,26 +194,49 @@ exports.convertToInvoice = async (req, res) => {
             return res.status(404).json({ error: 'Estimate not found' });
         }
 
-        // Generate next invoice number based on last created invoice for this user
+        // Verify Business Exists
+        const business = await BusinessDetail.findOne({
+            where: { id: estimate.business_id, is_deleted: false },
+            transaction
+        });
+
+        if (!business) {
+            await transaction.rollback();
+            return res.status(400).json({ error: 'Business details not found or deleted. Cannot create invoice.' });
+        }
+
+        // Generate next invoice number
         const lastInvoice = await Invoice.findOne({
             where: { user_id: req.user.id },
             order: [['createdAt', 'DESC']],
-            attributes: ['invoice_number']
+            attributes: ['invoice_number'],
+            transaction
         });
 
-        let nextInvoiceNum = 'INV-001';
+        let nextInvoiceNum = 'INV-001'; // Default to INV-001 if no prior invoices
         if (lastInvoice && lastInvoice.invoice_number) {
             const match = lastInvoice.invoice_number.match(/(\d+)$/);
             if (match) {
                 const number = parseInt(match[1], 10) + 1;
                 const prefix = lastInvoice.invoice_number.replace(match[0], '');
-                nextInvoiceNum = `${prefix}${String(number).padStart(match[1].length, '0')}`;
+                // Ensure we don't end up with just numbers if prefix is empty
+                const safePrefix = prefix || 'INV-';
+                nextInvoiceNum = `${safePrefix}${String(number).padStart(match[1].length, '0')}`;
             }
+        }
+
+        // Double check uniqueness (simple check)
+        const existingInv = await Invoice.findOne({
+            where: { invoice_number: nextInvoiceNum, user_id: req.user.id },
+            transaction
+        });
+        if (existingInv) {
+            nextInvoiceNum = `${nextInvoiceNum}-${Math.floor(Math.random() * 1000)}`;
         }
 
         // Create Invoice
         const invoiceData = {
-            invoice_number: nextInvoiceNum, // You may want to let client provide this or auto-gen properly
+            invoice_number: nextInvoiceNum,
             invoice_date: new Date(),
             due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days
             business_id: estimate.business_id,
@@ -221,42 +244,45 @@ exports.convertToInvoice = async (req, res) => {
             billing_address_id: estimate.billing_address_id,
             shipping_address_id: estimate.shipping_address_id,
             place_of_supply: estimate.place_of_supply,
-            subtotal: estimate.subtotal,
-            cgst_amount: estimate.cgst_amount,
-            sgst_amount: estimate.sgst_amount,
-            igst_amount: estimate.igst_amount,
-            total_tax: estimate.total_tax,
-            total_amount: estimate.total_amount,
+            subtotal: parseFloat(estimate.subtotal) || 0,
+            cgst_amount: parseFloat(estimate.cgst_amount) || 0,
+            sgst_amount: parseFloat(estimate.sgst_amount) || 0,
+            igst_amount: parseFloat(estimate.igst_amount) || 0,
+            total_tax: parseFloat(estimate.total_tax) || 0,
+            total_amount: parseFloat(estimate.total_amount) || 0,
             amount_in_words: estimate.amount_in_words,
             notes: `Converted from Estimate #${estimate.estimate_number}`,
             user_id: estimate.user_id,
-            status: 'Pending'
+            payment_status: 'Pending',
+            amount_remaining: parseFloat(estimate.total_amount) || 0
         };
 
         const invoice = await Invoice.create(invoiceData, { transaction });
 
-        // Create Invoice Items from Estimate Items
-        const invoiceItemsData = estimate.items.map(item => ({
-            invoice_id: invoice.id,
-            product_id: item.product_id,
-            product_name: item.product_name,
-            description: item.description,
-            hsn_sac_code: item.hsn_sac_code,
-            unit_type: item.unit_type,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            gst_rate: item.gst_rate,
-            taxable_value: item.taxable_value,
-            cgst_rate: item.cgst_rate,
-            sgst_rate: item.sgst_rate,
-            igst_rate: item.igst_rate,
-            cgst_amount: item.cgst_amount,
-            sgst_amount: item.sgst_amount,
-            igst_amount: item.igst_amount,
-            total_amount: item.total_amount
-        }));
+        // Create Invoice Items
+        if (estimate.items && estimate.items.length > 0) {
+            const invoiceItemsData = estimate.items.map(item => ({
+                invoice_id: invoice.id,
+                product_id: item.product_id,
+                product_name: item.product_name,
+                description: item.description,
+                hsn_sac_code: item.hsn_sac_code,
+                unit_type: item.unit_type,
+                quantity: parseFloat(item.quantity) || 0,
+                unit_price: parseFloat(item.unit_price) || 0,
+                gst_rate: parseFloat(item.gst_rate) || 0,
+                taxable_value: parseFloat(item.taxable_value) || 0,
+                cgst_rate: parseFloat(item.cgst_rate) || 0,
+                sgst_rate: parseFloat(item.sgst_rate) || 0,
+                igst_rate: parseFloat(item.igst_rate) || 0,
+                cgst_amount: parseFloat(item.cgst_amount) || 0,
+                sgst_amount: parseFloat(item.sgst_amount) || 0,
+                igst_amount: parseFloat(item.igst_amount) || 0,
+                total_amount: parseFloat(item.total_amount) || 0
+            }));
 
-        await InvoiceItem.bulkCreate(invoiceItemsData, { transaction });
+            await InvoiceItem.bulkCreate(invoiceItemsData, { transaction });
+        }
 
         // Update Estimate Status
         estimate.status = 'Converted';
@@ -265,8 +291,12 @@ exports.convertToInvoice = async (req, res) => {
         await transaction.commit();
         res.status(200).json({ message: 'Estimate converted to Invoice successfully', invoiceId: invoice.id });
     } catch (error) {
-        console.error(error);
+        console.error("[convertToInvoice] Error:", error);
+        if (error.errors) {
+            console.error("[convertToInvoice] Validation Errors:", error.errors.map(e => e.message));
+        }
         await transaction.rollback();
-        res.status(500).json({ error: error.message });
+        // Return 500 but with error message
+        res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
 };
