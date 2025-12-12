@@ -58,6 +58,15 @@ app.use('/api/invoices', invoiceTemplateRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/estimates', estimateRoutes);
 
+// Test Route
+app.get('/api/test', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Backend is running correctly!',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 🔥 GLOBAL ERROR HANDLER – catches thrown errors and logs stack traces
 app.use((err, req, res, next) => {
   console.error('\n🚨 GLOBAL ERROR HANDLER TRIGGERED 🚨');
