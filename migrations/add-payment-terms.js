@@ -4,14 +4,12 @@
 module.exports = {
     async up(queryInterface, Sequelize) {
         // Check if column exists first to be safe, though usually migrations track state
-        // For standard migrations, we just define the change.
-        // However, if the table structure is uncertain, describing table is useful.
-        // But standard practice: describeTable, then check if key exists.
 
-        const tableDefinition = await queryInterface.describeTable('Customers');
+        // Note: Table name must match exactly what is in DB. Usually strictly lowercase 'customers'.
+        const tableDefinition = await queryInterface.describeTable('customers');
 
         if (!tableDefinition.payment_terms) {
-            await queryInterface.addColumn('Customers', 'payment_terms', {
+            await queryInterface.addColumn('customers', 'payment_terms', {
                 type: Sequelize.INTEGER,
                 defaultValue: 0,
                 allowNull: true
@@ -20,10 +18,10 @@ module.exports = {
     },
 
     async down(queryInterface, Sequelize) {
-        const tableDefinition = await queryInterface.describeTable('Customers');
+        const tableDefinition = await queryInterface.describeTable('customers');
 
         if (tableDefinition.payment_terms) {
-            await queryInterface.removeColumn('Customers', 'payment_terms');
+            await queryInterface.removeColumn('customers', 'payment_terms');
         }
     }
 };
