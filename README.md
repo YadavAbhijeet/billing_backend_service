@@ -18,14 +18,29 @@ This is the backend service for the Invoice Dashboard, built with Node.js, Expre
 
     *If no database config is provided, it defaults to using a local SQLite file (`database.sqlite`).*
 
-3.  Run the server:
-    ```bash
-    npm start
-    ```
-    For development with auto-reload:
-    ```bash
-    npm run dev
-    ```
+3.  **Database Initialization & Migration (Important)**:
+
+    The application uses a hybrid approach for database management:
+    *   **Base Tables**: Created automatically by `sequelize.sync()` when the application starts for the first time.
+    *   **Schema Updates**: Managed via Sequelize Migrations.
+
+    **Order of Operations (Fresh Install):**
+    1.  **Start the App** first:
+        ```bash
+        npm start
+        # OR
+        npm run dev
+        ```
+        *Wait for "Database synchronized..." message in the logs.*
+
+    2.  **Run Migrations** (in a separate terminal):
+        ```bash
+        npx sequelize-cli db:migrate
+        # For Production:
+        npx sequelize-cli db:migrate --env production
+        ```
+
+    *If you try to run migrations before starting the app, you may get "table does not exist" errors.*
 
 ## Deployment
 

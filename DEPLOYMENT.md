@@ -108,18 +108,42 @@ For now, we will proceed with **SQLite**.
 
 ## Step 5: Start Application with PM2
 
-Start the application so it runs in the background.
+**CRITICAL STEP**: Starting the application for the first time will initialize the database tables (via `sequelize.sync()`).
+You MUST start the app *before* running any migrations.
 
-```bash
-pm2 start app.js --name "billing-backend"
-pm2 save
-pm2 startup
-```
-*(Run the command displayed by `pm2 startup` to configure auto-start on reboot)*
+1.  **Install PM2 Globally** (if not already installed):
+    ```bash
+    npm install -g pm2
+    # If "command not found", try:
+    source ~/.bashrc
+    ```
+
+2.  **Start the App**:
+    ```bash
+    pm2 start app.js --name "billing-backend"
+    pm2 save
+    pm2 startup
+    ```
+
+3.  **Check Logs for DB Connection**:
+    ```bash
+    pm2 logs billing-backend --lines 20
+    ```
+    *Wait until you see "Database connected..." and "Database synchronized..."*
 
 ---
 
-## Step 6: Setup Nginx (Reverse Proxy)
+## Step 6: Run Migrations (Post-Start)
+
+Once the app is running and tables are created, run the migrations to apply any additional changes (like the `payment_terms` column).
+
+```bash
+npx sequelize-cli db:migrate --env production
+```
+
+---
+
+## Step 7: Setup Nginx (Reverse Proxy)
 
 We need Nginx to forward port 80 (HTTP) traffic to port 3000 (your node app).
 
