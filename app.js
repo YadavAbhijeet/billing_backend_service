@@ -25,10 +25,14 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 // Middleware
+const corsOrigin = process.env.CORS_ORIGIN;
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || '*', // Allow specific origin in production, or all by default
+  origin: corsOrigin && corsOrigin.includes(',')
+    ? corsOrigin.split(',')
+    : (corsOrigin || '*'),
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
 };
 
 app.use(cors(corsOptions));
