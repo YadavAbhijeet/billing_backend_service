@@ -1,35 +1,29 @@
-const { Sequelize } = require('sequelize');
-const path = require('path');
+'use strict';
 
-const sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: path.join(__dirname, '..', 'database.sqlite'),
-    logging: console.log
-});
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+    async up(queryInterface, Sequelize) {
+        // Check if column exists first to be safe, though usually migrations track state
+        // For standard migrations, we just define the change.
+        // However, if the table structure is uncertain, describing table is useful.
+        // But standard practice: describeTable, then check if key exists.
 
-async function addPaymentTermsColumn() {
-    try {
-        await sequelize.authenticate();
-        console.log('✅ Connected to database');
+        const tableDefinition = await queryInterface.describeTable('Customers');
 
-        // Check if column exists
-        const [results] = await sequelize.query("PRAGMA table_info(customers);");
-        const hasPaymentTerms = results.some(col => col.name === 'payment_terms');
-
-        if (hasPaymentTerms) {
-            console.log('✅ payment_terms column already exists');
-        } else {
-            console.log('⚙️ Adding payment_terms column...');
-            await sequelize.query("ALTER TABLE customers ADD COLUMN payment_terms INTEGER DEFAULT 0;");
-            console.log('✅ payment_terms column added successfully');
+        if (!tableDefinition.payment_terms) {
+            await queryInterface.addColumn('Customers', 'payment_terms', {
+                type: Sequelize.INTEGER,
+                defaultValue: 0,
+                allowNull: true
+            });
         }
+    },
 
-        console.log('\n✅ Migration complete!');
-        process.exit(0);
-    } catch (error) {
-        console.error('❌ Migration failed:', error);
-        process.exit(1);
+    async down(queryInterface, Sequelize) {
+        const tableDefinition = await queryInterface.describeTable('Customers');
+
+        if (tableDefinition.payment_terms) {
+            await queryInterface.removeColumn('Customers', 'payment_terms');
+        }
     }
-}
-
-addPaymentTermsColumn();
+};
