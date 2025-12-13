@@ -381,6 +381,12 @@ exports.updateInvoice = async (req, res) => {
     let challans = invoiceDetails.challans;
     if (invoiceDetails.challans) delete invoiceDetails.challans;
 
+    // Prevent date format errors by removing automanaged timestamps
+    delete invoiceDetails.created_at;
+    delete invoiceDetails.updated_at;
+    delete invoiceDetails.createdAt;
+    delete invoiceDetails.updatedAt;
+
     await invoice.update(invoiceDetails, { transaction });
 
     // Handle Challans
