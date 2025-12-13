@@ -138,7 +138,7 @@ const Invoice = sequelize.define('Invoice', {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
-            model: 'Users',
+            model: 'users',
             key: 'id'
         }
     }

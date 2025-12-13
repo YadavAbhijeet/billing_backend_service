@@ -113,7 +113,7 @@ const Estimate = sequelize.define('Estimate', {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
-            model: 'Users',
+            model: 'users',
             key: 'id'
         }
     }
