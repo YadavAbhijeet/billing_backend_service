@@ -11,7 +11,7 @@ const Address = sequelize.define('Address', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'Customers',
+      model: 'customers',
       key: 'id',
     },
   },
