@@ -1,4 +1,4 @@
-'use strict';
+require('dotenv').config();
 const path = require("path");
 
 module.exports = {
@@ -13,8 +13,14 @@ module.exports = {
     logging: false
   },
   production: {
-    dialect: "sqlite",
-    storage: path.join(__dirname, "..", "database.sqlite"),
+    use_env_variable: 'DATABASE_URL',
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    },
     logging: false
   }
 };
