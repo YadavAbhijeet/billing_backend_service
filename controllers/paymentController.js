@@ -19,7 +19,7 @@ exports.createPayment = async (req, res) => {
         const invoice = await Invoice.findOne({
             where: { id: invoice_id, is_deleted: false },
             transaction,
-            lock: transaction.LOCK.UPDATE,
+
         });
 
         if (!invoice) {
@@ -108,7 +108,6 @@ exports.deletePayment = async (req, res) => {
             where: { id, is_deleted: false },
             include: [{ model: Invoice, as: 'invoice' }],
             transaction,
-            lock: transaction.LOCK.UPDATE
         });
 
         if (!payment) {
