@@ -148,6 +148,11 @@ exports.createInvoice = async (req, res) => {
     delete invoiceDetails.createdAt;
     delete invoiceDetails.updatedAt;
 
+    // Sanitize po_date to handle 'Invalid date' or empty strings
+    if (invoiceDetails.po_date === 'Invalid date' || invoiceDetails.po_date === '') {
+      invoiceDetails.po_date = null;
+    }
+
     // Create or update the invoice
     let invoice;
     let challans = invoiceDetails.challans || [];
