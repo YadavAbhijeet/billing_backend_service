@@ -29,12 +29,15 @@ exports.createPayment = async (req, res) => {
 
         const totalAmount = parseFloat(invoice.total_amount);
         const currentPaid = parseFloat(invoice.amount_paid || 0);
-        const currentRemaining = parseFloat(invoice.amount_remaining || totalAmount);
 
-        if (paymentAmount > currentRemaining) {
+        // REC: Calculate remaining dynamically to avoid desync issues with amount_remaining column
+        const currentRemaining = totalAmount - currentPaid;
+
+        // Allow small tolerance (0.5) for floating point mismatches
+        if (paymentAmount > currentRemaining + 0.5) {
             await transaction.rollback();
             return res.status(400).json({
-                error: `Payment amount (₹${paymentAmount}) cannot exceed remaining balance (₹${currentRemaining})`
+                error: `Payment amount (₹${paymentAmount}) cannot exceed remaining balance (₹${currentRemaining.toFixed(2)})`
             });
         }
 
