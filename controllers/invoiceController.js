@@ -398,6 +398,15 @@ exports.updateInvoice = async (req, res) => {
     delete invoiceDetails.createdAt;
     delete invoiceDetails.updatedAt;
 
+    // Sanitize po_date and challan_date
+    if (invoiceDetails.po_date === 'Invalid date' || invoiceDetails.po_date === '') {
+      invoiceDetails.po_date = null;
+    }
+    // Also sanitize challan_date if it exists in the main object (though usually in challans array)
+    if (invoiceDetails.challan_date === 'Invalid date' || invoiceDetails.challan_date === '') {
+      invoiceDetails.challan_date = null;
+    }
+
     await invoice.update(invoiceDetails, { transaction });
 
     // Handle Challans

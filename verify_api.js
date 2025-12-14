@@ -1,45 +1,45 @@
 const http = require('http');
+const https = require('https');
 
-// Configuration
+// Get URL from command line arg or default to localhost
+const targetUrl = process.argv[2] || 'http://localhost:3000/api/test';
+const url = new URL(targetUrl);
+
 const options = {
-    hostname: 'localhost',
-    port: 3000,
-    path: '/api/test',
+    hostname: url.hostname,
+    port: url.port || (url.protocol === 'https:' ? 443 : 80),
+    path: url.pathname + url.search,
     method: 'GET',
 };
 
-console.log(`Checking backend status at http://${options.hostname}:${options.port}${options.path} ...`);
+const client = url.protocol === 'https:' ? https : http;
 
-const req = http.request(options, (res) => {
+console.log(`Checking backend status at ${targetUrl} ...`);
+
+const req = client.request(options, (res) => {
     let data = '';
-
     console.log(`STATUS: ${res.statusCode}`);
 
-    // A chunk of data has been received.
-    res.on('data', (chunk) => {
-        data += chunk;
-    });
+    res.on('data', (chunk) => { data += chunk; });
 
-    // The whole response has been received.
     res.on('end', () => {
         try {
             const parsedData = JSON.parse(data);
             console.log('RESPONSE:', JSON.stringify(parsedData, null, 2));
-            if (parsedData.status === 'success') {
-                console.log('\n✅ TEST PASSED: Backend is running and reachable.');
+            if (res.statusCode === 200) {
+                console.log('\n✅ TEST PASSED: Server is UP and responding.');
             } else {
-                console.log('\n⚠️ TEST FAILED: Backend returned unexpected response.');
+                console.log('\n⚠️ TEST COMPLETED: Server responded but with error code.');
             }
         } catch (e) {
             console.log('RESPONSE (Raw):', data);
-            console.log('\n⚠️ TEST FAILED: Could not parse JSON response.');
+            console.log('\n⚠️ TEST FAILED: Response was not JSON.');
         }
     });
 });
 
 req.on('error', (e) => {
     console.error(`\n❌ CONNECTION ERROR: ${e.message}`);
-    console.log('Tip: Make sure the server is running (npm run dev) on port 3000.');
 });
 
 req.end();

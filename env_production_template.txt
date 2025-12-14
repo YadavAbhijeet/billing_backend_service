@@ -1,0 +1,17 @@
+# Production Environment Config
+# Rename this file to .env on the server
+
+# 1. Server Configuration
+PORT=3000
+NODE_ENV=production
+
+# 2. Security (Allow your frontend domain)
+CORS_ORIGIN=https://invoice.parivartanai.com
+
+# 3. Database Configuration (PostgreSQL)
+# Format: postgres://<user>:<password>@<host>:<port>/<database>
+DATABASE_URL=postgres://billing_user:VU%25E%29l%7Bws@localhost:5432/billing_db
+
+# 4. Authentication (JWT Secret)
+JWT_SECRET=eSinqXZCFNCQeWcWEqDhxJ8EJmYrbNGpi00+WfTiDGo=
+JWT_EXPIRES_IN=7d
