@@ -142,6 +142,12 @@ exports.createInvoice = async (req, res) => {
       }
     }
 
+    // Prevent date format errors by removing automanaged timestamps
+    delete invoiceDetails.created_at;
+    delete invoiceDetails.updated_at;
+    delete invoiceDetails.createdAt;
+    delete invoiceDetails.updatedAt;
+
     // Create or update the invoice
     let invoice;
     let challans = invoiceDetails.challans || [];
