@@ -27,9 +27,23 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 const corsOrigin = process.env.CORS_ORIGIN;
 const corsOptions = {
-  origin: corsOrigin && corsOrigin.includes(',')
-    ? corsOrigin.split(',')
-    : (corsOrigin || '*'),
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Check if origin is in the explicitly defined allowed list
+    const allowedOrigins = corsOrigin ? corsOrigin.split(',') : [];
+
+    // Allow any localhost origin for development convenience
+    const isLocalhost = origin.startsWith('http://localhost');
+
+    if (allowedOrigins.indexOf(origin) !== -1 || isLocalhost || corsOrigin === '*') {
+      callback(null, true);
+    } else {
+      console.log('Blocked by CORS:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
@@ -85,7 +99,7 @@ app.use((err, req, res, next) => {
 sequelize.authenticate()
   .then(() => {
     console.log('Database connected...');
-    return sequelize.sync();
+    return sequelize.sync({ alter: true });
   })
   .then(() => {
     console.log('Database synchronized...');
