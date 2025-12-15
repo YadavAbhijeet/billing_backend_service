@@ -1,0 +1,24 @@
+# === DEVELOPMENT (.env) ===
+
+# --- Server Config ---
+PORT=3000
+NODE_ENV=development
+# Allow both localhost frontend and production frontend (comma separated)
+CORS_ORIGIN=http://localhost:5173,http://localhost:5174,http://localhost:5175,https://invoice.parivartanai.com
+
+# --- Database Config (Choose ONE) ---
+
+# OPTION 1: SQLite (Easiest for quick local testing)
+# DATABASE_URL=sqlite:./database.sqlite
+
+# OPTION 2: PostgreSQL (Recommended for robust local dev)
+# Replace user, password, and db_name with your local postgres details
+DATABASE_URL=postgres://postgres:your_local_password@localhost:5432/invoice_db
+
+# --- Security ---
+# Ensure this matches the secret used to generate tokens
+JWT_SECRET=your-secret-key-change-this-in-production
+JWT_EXPIRES_IN=24h
+
+# --- Logging ---
+LOG_LEVEL=debug
